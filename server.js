@@ -47,26 +47,29 @@ mongoClient.connect(`${dbURL}:${dbPort}`, (err, client) => {
     }
 });
 
+app.use(express.urlencoded({ extended: true }));
+
 /*
  * This router handles POST requests — via the Nunjucks partial
  * "update-a-record-in-database.njk" — submitted from the form located at
  * http://localhost:3000/update-a-db-record/
  */
-app.post(`/update-a-db-record`, async (req, res) => {
-  try {
-    const name = req.body.name;             // From the dropdown
-    const newPassword = req.body.password;  // From the password input
+app.post(`/update-a-db-record`, (req, res) => {
+  const name = req.body.name;             // Selected name
+  const newPassword = req.body.password;  // New password entered
 
-    await dbCollection.updateOne(
-      { name: name },                       // Lookup by name
-      { $set: { password: newPassword } }   // Update password
-    );
+  db.collection(dbCollection).updateOne(
+    { name: name },                       // Filter
+    { $set: { password: newPassword } },  // Update
+    (err, result) => {
+      if (err) {
+        console.error(colors.red, err, colors.reset);
+        return res.status(500).send(`Error updating record.`);
+      }
 
-    res.redirect(`/update-a-db-record`);
-  } catch (err) {
-    console.error(colors.red, err, colors.reset);
-    res.status(500).send(`Error updating record.`);
-  }
+      res.redirect(`/update-a-db-record`);
+    }
+  );
 });
 
 /*
@@ -74,17 +77,20 @@ app.post(`/update-a-db-record`, async (req, res) => {
  * "delete-a-record-in-database.njk" — submitted from the form located at
  * http://localhost:3000/delete-a-db-record/
  */
-app.post(`/delete-a-db-record`, async (req, res) => {
-  try {
-    const name = req.body.name;                     // From the dropdown
+app.post(`/delete-a-db-record`, (req, res) => {
+  const name = req.body.name;
 
-    await dbCollection.deleteOne({ name: name });   // Delete by name
+  db.collection(dbCollection).deleteOne(
+    { name: name },
+    (err, result) => {
+      if (err) {
+        console.error(colors.red, err, colors.reset);
+        return res.status(500).send(`Error deleting record.`);
+      }
 
-    res.redirect(`/delete-a-db-record`);
-  } catch (err) {
-    console.error(colors.red, err, colors.reset);
-    res.status(500).send(`Error deleting record.`);
-  }
+      res.redirect(`/delete-a-db-record`);
+    }
+  );
 });
 
 /*
