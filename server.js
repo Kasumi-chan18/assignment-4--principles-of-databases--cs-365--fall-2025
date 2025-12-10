@@ -49,58 +49,42 @@ mongoClient.connect(`${dbURL}:${dbPort}`, (err, client) => {
 
 /*
  * This router handles POST requests — via the Nunjucks partial
- * “update-a-record-in-database.njk” — submitted from the form located at
+ * "update-a-record-in-database.njk" — submitted from the form located at
  * http://localhost:3000/update-a-db-record/
  */
-app.post(`/update-a-db-record`, (req, res) => {
-    const filter = { _id: new mongoDB.ObjectId(req.body._id) };
+app.post(`/update-a-db-record`, async (req, res) => {
+  try {
+    const name = req.body.name;             // From the dropdown
+    const newPassword = req.body.password;  // From the password input
 
-    // Remove _id from the update payload
-    const updateData = Object.assign({}, req.body);
-    delete updateData._id;
-
-    db.collection(dbCollection).updateOne(
-        filter,
-        { $set: updateData },
-        (err, result) => {
-            if (err) {
-                console.log(colors.red, err, colors.reset);
-                return res.send(`Error updating record.`);
-            }
-
-            console.log(
-                colors.green,
-                `Updated record with _id: ${req.body._id}`,
-                colors.reset
-            );
-
-            res.redirect(`/read-all-db-records`);
-        }
+    await dbCollection.updateOne(
+      { name: name },                       // Lookup by name
+      { $set: { password: newPassword } }   // Update password
     );
+
+    res.redirect(`/update-a-db-record`);
+  } catch (err) {
+    console.error(colors.red, err, colors.reset);
+    res.status(500).send(`Error updating record.`);
+  }
 });
 
 /*
  * This router handles POST requests — via the Nunjucks partial
- * “delete-a-record-in-database.njk” — submitted from the form located at
+ * "delete-a-record-in-database.njk" — submitted from the form located at
  * http://localhost:3000/delete-a-db-record/
  */
-app.post(`/delete-a-db-record`, (req, res) => {
-    const filter = { _id: new mongoDB.ObjectId(req.body._id) };
+app.post(`/delete-a-db-record`, async (req, res) => {
+  try {
+    const name = req.body.name;                     // From the dropdown
 
-    db.collection(dbCollection).deleteOne(filter, (err, result) => {
-        if (err) {
-            console.log(colors.red, err, colors.reset);
-            return res.send(`Error deleting record.`);
-        }
+    await dbCollection.deleteOne({ name: name });   // Delete by name
 
-        console.log(
-            colors.green,
-            `Deleted record with _id: ${req.body._id}`,
-            colors.reset
-        );
-
-        res.redirect(`/read-all-db-records`);
-    });
+    res.redirect(`/delete-a-db-record`);
+  } catch (err) {
+    console.error(colors.red, err, colors.reset);
+    res.status(500).send(`Error deleting record.`);
+  }
 });
 
 /*
